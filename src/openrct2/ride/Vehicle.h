@@ -271,6 +271,11 @@ struct Vehicle : EntityBase
     {
         Flags |= flag;
     }
+    
+    void ToggleFlag(uint32_t flag)
+    {
+        Flags ^= flag;
+    }
     void ApplyMass(int16_t appliedMass);
     void Serialise(DataSerialiser& stream);
     void Paint(PaintSession& session, int32_t imageDirection) const;

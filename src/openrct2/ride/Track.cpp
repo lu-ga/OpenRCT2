@@ -1119,5 +1119,10 @@ bool TrackTypeMustBeMadeInvisible(ride_type_t rideType, track_type_t trackType, 
         }
     }
 
+    if (trackType == TrackElemType::ReverserTableLeft || trackType == TrackElemType::ReverserTableRight)
+    {
+        return true;
+    }
+
     return false;
 }

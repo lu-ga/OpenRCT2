@@ -223,6 +223,8 @@ enum
     TRACK_DIAG_BRAKES,
     TRACK_DIAG_BLOCK_BRAKES,
 
+    TRACK_REVERSER_TABLE,
+
     TRACK_GROUP_COUNT,
 };
 
@@ -629,8 +631,11 @@ namespace TrackElemType
 
     constexpr track_type_t DiagBrakes = 337;
     constexpr track_type_t DiagBlockBrakes = 338;
+    
+    constexpr track_type_t ReverserTableLeft = 339;
+    constexpr track_type_t ReverserTableRight = 340;
 
-    constexpr track_type_t Count = 339;
+    constexpr track_type_t Count = 341;
     constexpr track_type_t None = 65535;
 
 }; // namespace TrackElemType

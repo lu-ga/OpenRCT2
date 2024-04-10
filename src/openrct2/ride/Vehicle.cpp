@@ -920,6 +920,8 @@ void Vehicle::UpdateMeasurements()
                 break;
             case TrackElemType::Waterfall:
             case TrackElemType::LogFlumeReverser:
+            case TrackElemType::ReverserTableLeft:
+            case TrackElemType::ReverserTableRight:
                 curRide->special_track_elements |= RIDE_ELEMENT_REVERSER_OR_WATERFALL;
                 break;
             case TrackElemType::Whirlpool:
@@ -2592,7 +2594,7 @@ void Vehicle::UpdateDeparting()
         }
         if (curRide->mode == RideMode::Shuttle)
         {
-            Flags ^= VehicleFlags::PoweredCarInReverse;
+            ToggleFlag(VehicleFlags::PoweredCarInReverse);
             velocity = 0;
 
             // We have turned, so treat it like entering a new tile
@@ -3037,7 +3039,7 @@ void Vehicle::UpdateTravelling()
             }
             if (curRide->mode == RideMode::Shuttle)
             {
-                Flags ^= VehicleFlags::PoweredCarInReverse;
+                ToggleFlag(VehicleFlags::PoweredCarInReverse);
                 velocity = 0;
             }
             else
@@ -7045,7 +7047,7 @@ bool Vehicle::UpdateTrackMotionForwardsGetNewTrack(uint16_t trackType, const Rid
     }
     if (trackType == TrackElemType::RotationControlToggle)
     {
-        Flags ^= VehicleFlags::SpinningIsLocked;
+        ToggleFlag(VehicleFlags::SpinningIsLocked);
     }
     // Change from original: this used to check if the vehicle allowed doors.
     UpdateSceneryDoorBackwards();
@@ -7151,6 +7153,27 @@ Loc6DAEB9:
         else
         {
             track_progress += 17;
+        }
+    }
+
+    
+    if (trackType == TrackElemType::ReverserTableLeft || trackType == TrackElemType::ReverserTableRight)
+    {
+        if (track_progress == 48)
+        {
+            ToggleFlag(VehicleFlags::CarIsReversed);
+        }
+        if (track_progress < 16)
+        {
+            velocity = 2.0_mph;
+        }
+        else if (track_progress < 48)
+        {
+            velocity = 1.5_mph;
+        }
+        else
+        {
+            velocity = 3.0_mph;
         }
     }
 
