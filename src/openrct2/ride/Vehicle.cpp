@@ -7159,22 +7159,66 @@ Loc6DAEB9:
     
     if (trackType == TrackElemType::ReverserTableLeft || trackType == TrackElemType::ReverserTableRight)
     {
-        if (track_progress == 48)
+        acceleration = 0;
+        if (track_progress == 15)
+        {
+            velocity = 0;
+            if (!HasFlag(VehicleFlags::StoppedOnHoldingBrake))
+            {
+                SetFlag(VehicleFlags::StoppedOnHoldingBrake);
+                vertical_drop_countdown = 30;
+            }
+        }
+        if (track_progress == 47)
         {
             ToggleFlag(VehicleFlags::CarIsReversed);
+            velocity = 0;
+            if (!HasFlag(VehicleFlags::StoppedOnHoldingBrake))
+            {
+                SetFlag(VehicleFlags::StoppedOnHoldingBrake);
+                vertical_drop_countdown = 30;
+            }
         }
-        if (track_progress < 16)
+
+        if (!HasFlag(VehicleFlags::StoppedOnHoldingBrake))
         {
-            velocity = 2.0_mph;
+            if (track_progress <= 15)
+            {
+                if (velocity > 100)
+                    acceleration = -100;
+
+                if (velocity < 100)
+                    velocity = 100;
+            }
+            else if (track_progress <= 31)
+            {
+                if (velocity < 300)
+                    acceleration = 100;
+            }
+            else if (track_progress <= 47)
+            {
+                if (velocity > 150)
+                    acceleration = -120;
+                else if (velocity > 50)
+                {
+                    acceleration = -50;
+				}
+                if (velocity < 50)
+                    velocity = 50;
+            }
+            else
+            {
+                if (velocity < 200)
+                    acceleration = 80;
+            }
         }
-        else if (track_progress < 48)
-        {
-            velocity = 1.5_mph;
-        }
-        else
-        {
-            velocity = 3.0_mph;
-        }
+		else
+		{
+            if (vertical_drop_countdown <= 0)
+            {
+                ClearFlag(VehicleFlags::StoppedOnHoldingBrake);
+			}
+		}
     }
 
     uint16_t newTrackProgress = track_progress + 1;

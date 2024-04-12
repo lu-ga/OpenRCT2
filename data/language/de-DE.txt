@@ -3688,6 +3688,12 @@ STR_6619    :Objekttyp kann nicht eingeschränkt werden!
 STR_6620    :Objekt nicht gefunden!
 STR_6621    :Einschränken
 STR_6622    :Objekt auf den Szenario-Editor und dem Sandkastenmodus einschränken
+STR_6623    :TIppe ‘help’ für eine Liste der verfügbaren Befehle. Tippe ‘hide’ um die Konsole auszublenden.
+STR_6624    :Tile Inspector: Elemente sortieren
+STR_6625    :Ungültige Farbe
+
+STR_6626    :Wendeplattform (links)
+STR_6627    :Wendeplattform (rechts)
 
 #############
 # Scenarios #
