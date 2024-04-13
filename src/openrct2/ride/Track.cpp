@@ -662,6 +662,11 @@ bool TrackElementIsCovered(track_type_t trackElementType)
         case TrackElemType::SBendRightCovered:
         case TrackElemType::LeftQuarterTurn3TilesCovered:
         case TrackElemType::RightQuarterTurn3TilesCovered:
+        case TrackElemType::DiagFlatCovered:
+        case TrackElemType::LeftEighthToDiagCovered:
+        case TrackElemType::RightEighthToDiagCovered:
+        case TrackElemType::LeftEighthToOrthogonalCovered:
+        case TrackElemType::RightEighthToOrthogonalCovered:
             return true;
         default:
             return false;
@@ -710,6 +715,16 @@ track_type_t UncoverTrackElement(track_type_t trackElementType)
             return TrackElemType::LeftQuarterTurn3Tiles;
         case TrackElemType::RightQuarterTurn3TilesCovered:
             return TrackElemType::RightQuarterTurn3Tiles;
+        case TrackElemType::DiagFlatCovered:
+            return TrackElemType::DiagFlat;
+        case TrackElemType::LeftEighthToDiagCovered:
+            return TrackElemType::LeftEighthToDiag;
+        case TrackElemType::RightEighthToDiagCovered:
+            return TrackElemType::RightEighthToDiag;
+        case TrackElemType::LeftEighthToOrthogonalCovered:
+            return TrackElemType::LeftEighthToOrthogonal;
+        case TrackElemType::RightEighthToOrthogonalCovered:
+            return TrackElemType::RightEighthToOrthogonal;
         default:
             return trackElementType;
     }
@@ -1119,9 +1134,16 @@ bool TrackTypeMustBeMadeInvisible(ride_type_t rideType, track_type_t trackType, 
         }
     }
 
-    if (trackType == TrackElemType::ReverserTableLeft || trackType == TrackElemType::ReverserTableRight)
+    switch (trackType)
     {
-        return true;
+        case TrackElemType::ReverserTableLeft:
+        case TrackElemType::ReverserTableRight:
+        case TrackElemType::DiagFlatCovered:
+        case TrackElemType::LeftEighthToDiagCovered:
+        case TrackElemType::RightEighthToDiagCovered:
+        case TrackElemType::LeftEighthToOrthogonalCovered:
+        case TrackElemType::RightEighthToOrthogonalCovered:
+            return true;
     }
 
     return false;

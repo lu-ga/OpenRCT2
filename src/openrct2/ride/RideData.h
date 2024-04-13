@@ -248,7 +248,7 @@ struct UpkeepCostsDescriptor
     money64 CostPerStation;
 };
 
-using RideTrackGroup = OpenRCT2::BitSet<TRACK_GROUP_COUNT>;
+using RideTrackGroup = OpenRCT2::BitSet<TrackElemType::Count>;
 using UpdateRideApproachVehicleWaypointsFunction = void (*)(Guest&, const CoordsXY&, int16_t&);
 using RideMusicUpdateFunction = void (*)(Ride&);
 using PeepUpdateRideLeaveEntranceFunc = void (*)(Guest*, Ride&, CoordsXYZD&);

@@ -5550,11 +5550,12 @@ void Vehicle::UpdateVelocity()
     if (HasFlag(VehicleFlags::StoppedOnHoldingBrake))
     {
         vertical_drop_countdown--;
-        if (vertical_drop_countdown == -70)
+        full_stop_countdown--;
+        if (vertical_drop_countdown == -70 || full_stop_countdown < 0)
         {
             ClearFlag(VehicleFlags::StoppedOnHoldingBrake);
         }
-        if (vertical_drop_countdown >= 0)
+        if (vertical_drop_countdown >= 0 || full_stop_countdown >= 0)
         {
             nextVelocity = 0;
             acceleration = 0;
@@ -7160,65 +7161,40 @@ Loc6DAEB9:
     if (trackType == TrackElemType::ReverserTableLeft || trackType == TrackElemType::ReverserTableRight)
     {
         acceleration = 0;
-        if (track_progress == 15)
+        if (track_progress == 31 || track_progress == 63)
         {
             velocity = 0;
             if (!HasFlag(VehicleFlags::StoppedOnHoldingBrake))
             {
                 SetFlag(VehicleFlags::StoppedOnHoldingBrake);
-                vertical_drop_countdown = 30;
+                full_stop_countdown = 30;
             }
         }
-        if (track_progress == 47)
+        if (track_progress == 63)
         {
             ToggleFlag(VehicleFlags::CarIsReversed);
-            velocity = 0;
-            if (!HasFlag(VehicleFlags::StoppedOnHoldingBrake))
-            {
-                SetFlag(VehicleFlags::StoppedOnHoldingBrake);
-                vertical_drop_countdown = 30;
-            }
         }
 
         if (!HasFlag(VehicleFlags::StoppedOnHoldingBrake))
         {
-            if (track_progress <= 15)
+            if (track_progress <= 31)
             {
-                if (velocity > 100)
-                    acceleration = -100;
-
-                if (velocity < 100)
-                    velocity = 100;
+                if (velocity > 0.1_mph)
+                    velocity -= velocity >> 2;
+                else
+                    velocity = 0.1_mph;
+               
             }
-            else if (track_progress <= 31)
+            else if (track_progress <= 63)
             {
-                if (velocity < 300)
-                    acceleration = 100;
-            }
-            else if (track_progress <= 47)
-            {
-                if (velocity > 150)
-                    acceleration = -120;
-                else if (velocity > 50)
-                {
-                    acceleration = -50;
-				}
-                if (velocity < 50)
-                    velocity = 50;
+                velocity = 2.1_mph - abs(48 - track_progress) * 2.0_mph / 16;
             }
             else
             {
-                if (velocity < 200)
-                    acceleration = 80;
+                if (velocity < 2.0_mph)
+                    acceleration = 300;
             }
         }
-		else
-		{
-            if (vertical_drop_countdown <= 0)
-            {
-                ClearFlag(VehicleFlags::StoppedOnHoldingBrake);
-			}
-		}
     }
 
     uint16_t newTrackProgress = track_progress + 1;
@@ -9091,4 +9067,5 @@ void Vehicle::Serialise(DataSerialiser& stream)
     stream << target_seat_rotation;
     stream << BoatLocation;
     stream << BlockBrakeSpeed;
+    stream << full_stop_countdown;
 }

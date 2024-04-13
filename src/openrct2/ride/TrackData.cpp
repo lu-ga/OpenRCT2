@@ -357,8 +357,16 @@ static constexpr TrackCoordinates _trackCoordinates[] = {
         { 4, 1, 0,-48, -32, 64 },  // TrackElemType::RightEighthBankToOrthogonalDown25     
         { 4, 4, 0, 0, -32, 32 },    // TrackElemType::DiagBrakes
         { 4, 4, 0, 0, -32, 32 },    // TrackElemType::DiagBlockBrakes
-        { 0, 2, 0, 0, 0, -32 },       // TrackElemType::ReverserTableLeft
+        { 0, 2, 0, 0, 0, -32 },      // TrackElemType::ReverserTableLeft
         { 0, 2, 0, 0, 0, 32 },       // TrackElemType::ReverserTableRight
+
+        { 4, 4, 0, 0, -32, 32 },     // TrackElemType::DiagFlatCovered
+        { 0, 7, 0, 0, -64, -32 },    // TrackElemType::LeftEighthToDiagCovered
+        { 0, 4, 0, 0, -64, 32 },     // TrackElemType::RightEighthToDiagCovered
+        { 4, 0, 0, 0, -64, 32 },     // TrackElemType::LeftEighthToOrthogonalCovered
+        { 4, 1, 0, 0, -32, 64 },     // TrackElemType::RightEighthToOrthogonalCovered
+
+
 };
 static_assert(std::size(_trackCoordinates) == TrackElemType::Count);
 
@@ -706,6 +714,13 @@ static constexpr uint8_t TrackSequenceProperties[][MaxSequencesPerPiece] = {
     /* DiagonalBlockBrakes                   */ { 0 },
     { 0 }, // TrackElemType::ReverserTableLeft
     { 0 }, // TrackElemType::ReverserTableRight
+
+    
+        { 0 },     // TrackElemType::DiagFlatCovered
+        { 0 },    // TrackElemType::LeftEighthToDiagCovered
+        { 0 },     // TrackElemType::RightEighthToDiagCovered
+        { 0 },     // TrackElemType::LeftEighthToOrthogonalCovered
+        { 0 },     // TrackElemType::RightEighthToOrthogonalCovered
     };
 static_assert(std::size(TrackSequenceProperties) == TrackElemType::Count);
 
@@ -3021,14 +3036,18 @@ static constexpr PreviewTrack TrackBlocksRightEighthToOrthogonalDown25[] = {
 };
 
 static constexpr PreviewTrack TrackBlocksReverserTableLeft[] = {
-    { 0, 0, 0, 0, 0, { 0b1111, 0 }, 0 },
-    { 1, 0, -32, 0, 0, { 0b1111, 0 }, 0 },
+    { 0,   0,   0, 0, 0, { 0b1111, 0 }, 0 },
+    { 1, -32,   0, 0, 0, { 0b1111, 0 }, 0 },
+    { 2, -32, -32, 0, 0, { 0b1111, 0 }, 0 },
+    { 3,   0, -32, 0, 0, { 0b1111, 0 }, 0 },
     kTrackBlockEnd
 };
 
 static constexpr PreviewTrack TrackBlocksReverserTableRight[] = {
-    { 0, 0, 0, 0, 0, { 0b1111, 0 }, 0 },
-    { 1, 0, 32, 0, 0, { 0b1111, 0 }, 0 },
+    { 0,   0,  0, 0, 0, { 0b1111, 0 }, 0 },
+    { 1, -32,  0, 0, 0, { 0b1111, 0 }, 0 },
+    { 2, -32, 32, 0, 0, { 0b1111, 0 }, 0 },
+    { 3,   0, 32, 0, 0, { 0b1111, 0 }, 0 },
     kTrackBlockEnd
 };
 
@@ -3377,6 +3396,12 @@ static constexpr std::array<const PreviewTrack*, TrackElemType::Count> TrackBloc
     TrackBlocks141,                           // TrackElemType::DiagBlockBrakes
     TrackBlocksReverserTableLeft,             // TrackElemType::ReverserTableLeft
     TrackBlocksReverserTableRight,            // TrackElemType::ReverserTableRight
+    
+    TrackBlocks141,                           // TrackElemType::DiagFlatCovered
+    TrackBlocks133,                           // TrackElemType::LeftEighthToDiagCovered
+    TrackBlocks134,                           // TrackElemType::RightEighthToDiagCovered
+    TrackBlocks135,                           // TrackElemType::LeftEighthToOrthogonalCovered
+    TrackBlocks136,                           // TrackElemType::RightEighthToOrthogonalCovered
 };
 
 static constexpr uint8_t TrackPieceLengths[] = {
@@ -3719,8 +3744,14 @@ static constexpr uint8_t TrackPieceLengths[] = {
     92, // TrackElemType::RightEighthBankToOrthogonalDown25
     45, // TrackElemType::DiagBrakes
     45, // TrackElemType::DiagBlockBrakes
-    32, // TrackElemType::ReverserTableLeft
-    32, // TrackElemType::ReverserTableRight
+    96, // TrackElemType::ReverserTableLeft
+    96, // TrackElemType::ReverserTableRight
+    
+    45,                           // TrackElemType::DiagFlatCovered
+    87,                           // TrackElemType::LeftEighthToDiagCovered
+    87,                           // TrackElemType::RightEighthToDiagCovered
+    87,                           // TrackElemType::LeftEighthToOrthogonalCovered
+    87,                           // TrackElemType::RightEighthToOrthogonalCovered
 };
 static_assert(std::size(TrackPieceLengths) == TrackElemType::Count);
 
@@ -4062,11 +4093,17 @@ static constexpr TrackCurveChain gTrackCurveChain[] = {
     { EnumValue(TrackCurve::LeftLarge), EnumValue(TrackCurve::LeftLarge) },   // TrackElemType::LeftEighthBankToOrthogonalUp25
     { EnumValue(TrackCurve::RightLarge), EnumValue(TrackCurve::RightLarge) }, // TrackElemType::RightEighthBankToOrthogonalUp25 
     { EnumValue(TrackCurve::LeftLarge), EnumValue(TrackCurve::LeftLarge) },   // TrackElemType::LeftEighthBankToOrthogonalDown25
-    { EnumValue(TrackCurve::RightLarge), EnumValue(TrackCurve::RightLarge) }, // TrackElemType::RightEighthBankToOrthogonalDown25     
+    { EnumValue(TrackCurve::RightLarge), EnumValue(TrackCurve::RightLarge) }, // TrackElemType::RightEighthBaLeftEighthToDiagCoverednkToOrthogonalDown25     
     { RideConstructionSpecialPieceSelected | TrackElemType::DiagBrakes, RideConstructionSpecialPieceSelected | TrackElemType::DiagBrakes }, // TrackElemType::DiagBrakes
     { EnumValue(TrackCurve::None), EnumValue(TrackCurve::None) }, // TrackElemType::DiagBlockBrakes
     { EnumValue(TrackCurve::None), EnumValue(TrackCurve::None) }, // TrackElemType::ReverserTableLeft
     { EnumValue(TrackCurve::None), EnumValue(TrackCurve::None) }, // TrackElemType::ReverserTableRight
+
+    { EnumValue(TrackCurve::None), EnumValue(TrackCurve::None) },             // TrackElemType::DiagFlatCovered
+    { EnumValue(TrackCurve::LeftLarge), EnumValue(TrackCurve::LeftLarge) },   // TrackElemType::
+    { EnumValue(TrackCurve::RightLarge), EnumValue(TrackCurve::RightLarge) }, // TrackElemType::RightEighthToDiagCovered
+    { EnumValue(TrackCurve::LeftLarge), EnumValue(TrackCurve::LeftLarge) },   // TrackElemType::LeftEighthToOrthogonalCovered
+    { EnumValue(TrackCurve::RightLarge), EnumValue(TrackCurve::RightLarge) }, // TrackElemType::RightEighthToOrthogonalCovered
 };
 static_assert(std::size(gTrackCurveChain) == TrackElemType::Count);
 
@@ -4394,15 +4431,15 @@ static constexpr track_type_t AlternativeTrackTypes[] = {
     TrackElemType::None,
     TrackElemType::None,
     TrackElemType::None,
+    TrackElemType::LeftEighthToDiagCovered,
+    TrackElemType::RightEighthToDiagCovered,
+    TrackElemType::LeftEighthToOrthogonalCovered,
+    TrackElemType::RightEighthToOrthogonalCovered,
     TrackElemType::None,
     TrackElemType::None,
     TrackElemType::None,
     TrackElemType::None,
-    TrackElemType::None,
-    TrackElemType::None,
-    TrackElemType::None,
-    TrackElemType::None,
-    TrackElemType::None,
+    TrackElemType::DiagFlatCovered, // TrackElemType::DiagFlat
     TrackElemType::None,
     TrackElemType::None,
     TrackElemType::None,
@@ -4602,6 +4639,11 @@ static constexpr track_type_t AlternativeTrackTypes[] = {
     TrackElemType::None, // TrackElemType::DiagBlockBrakes
     TrackElemType::None, // TrackElemType::ReverserTableLeft
     TrackElemType::None, // TrackElemType::ReverserTableRight
+    TrackElemType::DiagFlat, // TrackElemType::DiagFlatCovered
+    TrackElemType::LeftEighthToDiag,
+    TrackElemType::RightEighthToDiag,
+    TrackElemType::LeftEighthToOrthogonal,
+    TrackElemType::RightEighthToOrthogonal,
 };
 static_assert(std::size(AlternativeTrackTypes) == TrackElemType::Count);
 
@@ -4948,6 +4990,11 @@ static constexpr money64 TrackPricing[] = {
     123456, // TrackElemType::DiagBlockBrakes
     123456, // TrackElemType::ReverserTableLeft
     123456, // TrackElemType::ReverserTableRight
+    92681,  // TrackElemType::DiagFlatCovered
+    190960, // TrackElemType::LeftEighthToDiagCovered
+    190960, // TrackElemType::RightEighthToDiagCovered
+    190960, // TrackElemType::LeftEighthToOrthogonalCovered
+    190960, // TrackElemType::RightEighthToOrthogonalCovered
 };
 
 
@@ -5298,6 +5345,12 @@ static constexpr track_type_t TrackElementMirrorMap[] = {
     TrackElemType::ReverserTableRight,                    // TrackElemType::ReverserTableLeft
     TrackElemType::ReverserTableLeft,                    // TrackElemType::ReverserTableRight
     
+    TrackElemType::DiagFlatCovered,
+    TrackElemType::RightEighthToDiagCovered,
+    TrackElemType::LeftEighthToDiagCovered,
+    TrackElemType::RightEighthToOrthogonalCovered,
+    TrackElemType::LeftEighthToOrthogonalCovered,
+    
 };
 static_assert(std::size(TrackElementMirrorMap) == TrackElemType::Count);
 
@@ -5644,7 +5697,11 @@ static constexpr uint32_t TrackHeightMarkerPositions[] = {
     (1 << 0), // TrackElemType::DiagBlockBrakes
     (1 << 0), // TrackElemType::ReverserTableLeft
     (1 << 0), // TrackElemType::ReverserTableRight
-    
+    (1 << 0), // TrackElemType::DiagFlatCovered
+    (1 << 0) | (1 << 4), // TrackElemType::LeftEighthToDiagCovered
+    (1 << 0) | (1 << 4), // TrackElemType::RightEighthToDiagCovered
+    (1 << 0) | (1 << 4), // TrackElemType::LeftEighthToOrthogonalCovered
+    (1 << 0) | (1 << 4), // TrackElemType::RightEighthToOrthogonalCovered
 };
 static_assert(std::size(TrackHeightMarkerPositions) == TrackElemType::Count);
 
@@ -5992,6 +6049,11 @@ static constexpr uint8_t TrackSequenceElementAllowedWallEdges[][MaxSequencesPerP
     {      0, 0b0110, 0b1001,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0 }, // TrackElemType::DiagBlockBrakes
     {      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0 }, // TrackElemType::ReverserTableLeft
     {      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0 }, // TrackElemType::ReverserTableRight
+    {      0, 0b0110, 0b1001,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0 }, // TrackElemType::DiagFlatCovered 
+    { 0b0010, 0b0010, 0b1000, 0b0011,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0 }, // TrackElemType::LeftEighthToDiagCovered
+    { 0b1000, 0b1000, 0b0010, 0b1001,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0 }, // TrackElemType::RightEighthToDiagCovered
+    {      0, 0b1000, 0b0110, 0b0010, 0b0010,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0 }, // TrackElemType::LeftEighthToOrthogonalCovered
+    {      0, 0b0100, 0b1001, 0b0001, 0b0001,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0 }, // TrackElemType::RightEighthToOrthogonalCovered
 };
 
 
@@ -6342,6 +6404,11 @@ static constexpr uint32_t TrackFlags[] = {
     /* TrackElemType::ReverserTableLeft                             */   0,
     /* TrackElemType::ReverserTableRight                            */   0,
     
+    /* TrackElemType::DiagFlatCovered                               */   0,
+    /* TrackElemType::LeftEighthToDiagCovered                       */   TRACK_ELEM_FLAG_TURN_LEFT,
+    /* TrackElemType::RightEighthToDiagCovered                      */   TRACK_ELEM_FLAG_TURN_RIGHT,
+    /* TrackElemType::LeftEighthToOrthogonalCovered                 */   TRACK_ELEM_FLAG_TURN_LEFT,
+    /* TrackElemType::RightEighthToOrthogonalCovered                */   TRACK_ELEM_FLAG_TURN_RIGHT,
 };
 static_assert(std::size(TrackFlags) == TrackElemType::Count);
 // clang-format on
@@ -6692,7 +6759,11 @@ static constexpr TrackDefinition TrackDefinitions[] =
     { TRACK_DIAG_BLOCK_BRAKES,      TrackPitch::None,           TrackPitch::None,           TrackRoll::None,        TrackRoll::None,        0  }, // TrackElemType::DiagBlockBrakes
     { TRACK_REVERSER_TABLE,         TrackPitch::None,           TrackPitch::None,           TrackRoll::None,        TrackRoll::None,        0  }, // TrackElemType::ReverserTableLeft
     { TRACK_REVERSER_TABLE,         TrackPitch::None,           TrackPitch::None,           TrackRoll::None,        TrackRoll::None,        0  }, // TrackElemType::ReverserTableRight
-    
+    { TRACK_FLAT,                   TrackPitch::None,           TrackPitch::None,           TrackRoll::None,        TrackRoll::None,        0  }, // TrackElemType::DiagFlatCovered
+    { TRACK_FLAT,                   TrackPitch::None,           TrackPitch::None,           TrackRoll::None,        TrackRoll::None,        0  }, // TrackElemType::LeftEighthToDiagCovered
+    { TRACK_FLAT,                   TrackPitch::None,           TrackPitch::None,           TrackRoll::None,        TrackRoll::None,        0  }, // TrackElemType::RightEighthToDiagCovered
+    { TRACK_FLAT,                   TrackPitch::None,           TrackPitch::None,           TrackRoll::None,        TrackRoll::None,        0  }, // TrackElemType::LeftEighthToOrthogonalCovered
+    { TRACK_FLAT,                   TrackPitch::None,           TrackPitch::None,           TrackRoll::None,        TrackRoll::None,        0  }, // TrackElemType::RightEighthToOrthogonalCovered
 };
 static_assert(std::size(TrackDefinitions) == TrackElemType::Count);
 
@@ -6725,7 +6796,7 @@ constexpr static uint8_t TrackTypeToSpinFunction[] = {
     L9_SPIN, R9_SPIN, NO_SPIN, NO_SPIN, NO_SPIN, NO_SPIN, NO_SPIN, NO_SPIN, NO_SPIN, NO_SPIN, NO_SPIN, NO_SPIN, NO_SPIN,
     NO_SPIN, NO_SPIN, NO_SPIN, NO_SPIN, NO_SPIN, NO_SPIN, NO_SPIN, NO_SPIN, NO_SPIN, NO_SPIN, NO_SPIN, NO_SPIN, NO_SPIN,
     NO_SPIN, NO_SPIN, NO_SPIN, NO_SPIN, L9_SPIN, R9_SPIN, L9_SPIN, R9_SPIN, L9_SPIN, R9_SPIN, L9_SPIN, R9_SPIN, NO_SPIN,
-    NO_SPIN, NO_SPIN, NO_SPIN,
+    NO_SPIN, NO_SPIN, NO_SPIN, NO_SPIN, L9_SPIN, R9_SPIN, L9_SPIN, R9_SPIN,
 };
 static_assert(std::size(TrackTypeToSpinFunction) == TrackElemType::Count);
 
@@ -7160,6 +7231,8 @@ static constexpr TrackComputeFunction GetLateralFunction(const uint16_t type)
             return EvaluatorConst<0>;
         case TrackElemType::LeftEighthToDiag:
         case TrackElemType::LeftEighthToOrthogonal:
+        case TrackElemType::LeftEighthToDiagCovered:
+        case TrackElemType::LeftEighthToOrthogonalCovered:
         case TrackElemType::LeftEighthToDiagUp25:
         case TrackElemType::LeftEighthToDiagDown25:
         case TrackElemType::LeftEighthToOrthogonalUp25:
@@ -7167,6 +7240,8 @@ static constexpr TrackComputeFunction GetLateralFunction(const uint16_t type)
             return EvaluatorConst<137>;
         case TrackElemType::RightEighthToDiag:
         case TrackElemType::RightEighthToOrthogonal:
+        case TrackElemType::RightEighthToDiagCovered:
+        case TrackElemType::RightEighthToOrthogonalCovered:
         case TrackElemType::RightEighthToDiagUp25:
         case TrackElemType::RightEighthToDiagDown25:
         case TrackElemType::RightEighthToOrthogonalUp25:
@@ -8019,7 +8094,13 @@ static constexpr StringId RideConfigurationStringIds[] = {
     STR_BRAKES,                        // TrackElemType::DiagBrakes
     STR_BLOCK_BRAKES,                  // TrackElemType::DiagBlockBrakes
     STR_REVERSER_TABLE_LEFT,           // TrackElemType::ReverserTableLeft
-    STR_REVERSER_TABLE_RIGHT           // TrackElemType::ReverserTableRight
+    STR_REVERSER_TABLE_RIGHT,          // TrackElemType::ReverserTableRight
+
+    STR_EMPTY,   // TrackElemType::DiagFlatCovered
+    STR_EMPTY,   // TrackElemType::LeftEighthToDiagCovered
+    STR_EMPTY,   // TrackElemType::RightEighthToDiagCovered
+    STR_EMPTY,   // TrackElemType::LeftEighthToOrthogonalCovered
+    STR_EMPTY,   // TrackElemType::RightEighthToOrthogonalCovered
 };
 static_assert(std::size(RideConfigurationStringIds) == TrackElemType::Count);
 

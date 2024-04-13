@@ -203,6 +203,7 @@ struct Vehicle : EntityBase
     uint8_t brake_speed;
     uint16_t lost_time_out;
     int8_t vertical_drop_countdown;
+    int8_t full_stop_countdown;
     uint8_t var_D3;
     MiniGolfAnimation mini_golf_current_animation;
     uint8_t mini_golf_flags;

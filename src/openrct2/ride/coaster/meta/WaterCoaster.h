@@ -28,7 +28,7 @@ constexpr RideTypeDescriptor WaterCoasterRTD =
         },
         {
             .Drawer = GetTrackPaintFunctionSplashBoats,
-            .EnabledTrackPieces = {TrackElemType::Flat, TrackElemType::LeftQuarterTurn5Tiles, TrackElemType::RightQuarterTurn5Tiles, TrackElemType::SBendLeft, TrackElemType::SBendRight},
+            .EnabledTrackPieces = {TrackElemType::Flat, TrackElemType::LeftQuarterTurn5Tiles, TrackElemType::RightQuarterTurn5Tiles, TrackElemType::SBendLeft, TrackElemType::SBendRight /*, TrackElemType::DiagFlat, TrackElemType::LeftEighthToDiag, TrackElemType::RightEighthToDiag, TrackElemType::LeftEighthToOrthogonal, TrackElemType::RightEighthToOrthogonal */},
             .ExtraTrackPieces = {},
         }
     ),

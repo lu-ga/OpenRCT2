@@ -635,7 +635,14 @@ namespace TrackElemType
     constexpr track_type_t ReverserTableLeft = 339;
     constexpr track_type_t ReverserTableRight = 340;
 
-    constexpr track_type_t Count = 341;
+    
+    constexpr track_type_t DiagFlatCovered = 341;
+    constexpr track_type_t LeftEighthToDiagCovered = 342;
+    constexpr track_type_t RightEighthToDiagCovered = 343;
+    constexpr track_type_t LeftEighthToOrthogonalCovered = 344;
+    constexpr track_type_t RightEighthToOrthogonalCovered = 345;
+
+    constexpr track_type_t Count = 346;
     constexpr track_type_t None = 65535;
 
 }; // namespace TrackElemType
