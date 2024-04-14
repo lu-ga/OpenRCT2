@@ -549,6 +549,8 @@ bool TrackElement::IsBlockStart() const
         case TrackElemType::CableLiftHill:
         case TrackElemType::BlockBrakes:
         case TrackElemType::DiagBlockBrakes:
+        case TrackElemType::ReverserTableLeft:
+        case TrackElemType::ReverserTableRight:
             return true;
         case TrackElemType::Up25ToFlat:
         case TrackElemType::Up60ToFlat:

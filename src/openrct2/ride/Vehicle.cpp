@@ -7161,38 +7161,62 @@ Loc6DAEB9:
     if (trackType == TrackElemType::ReverserTableLeft || trackType == TrackElemType::ReverserTableRight)
     {
         acceleration = 0;
-        if (track_progress == 31 || track_progress == 63)
-        {
-            velocity = 0;
-            if (!HasFlag(VehicleFlags::StoppedOnHoldingBrake))
-            {
-                SetFlag(VehicleFlags::StoppedOnHoldingBrake);
-                full_stop_countdown = 30;
-            }
-        }
         if (track_progress == 63)
         {
             ToggleFlag(VehicleFlags::CarIsReversed);
         }
 
-        if (!HasFlag(VehicleFlags::StoppedOnHoldingBrake))
+        int32_t min_velocity = 0.5_mph;
+        int32_t target_velocity = 3.0_mph;
+        int32_t max_brake_speed = 6.0_mph;
+        int32_t current_acceleration = 0x30000;
+
+        if (track_progress <= 31)
         {
-            if (track_progress <= 31)
+            target_velocity = 3.0_mph - (track_progress * track_progress * 2.5_mph) / 32 / 32;
+        }
+        else if (track_progress <= 63)
+        {
+            current_acceleration = 0;
+            velocity = 3.0_mph - (45 - track_progress) * (45 - track_progress) * 2.5_mph / 14 / 14;
+            if (velocity < min_velocity)
+                velocity = min_velocity;
+
+        }
+        else
+        {
+            target_velocity = 3.0_mph - (96 - track_progress) * (96 - track_progress) * 2.5_mph / 32 / 32;
+        }
+
+            
+        if (target_velocity < min_velocity)
+            target_velocity = min_velocity;
+
+        int32_t velocity_delta = velocity - target_velocity;
+            
+        if (velocity_delta > 0)
+        {
+            if (velocity_delta < max_brake_speed)
+                acceleration = -current_acceleration;
+        }
+        else
+            acceleration = current_acceleration;
+
+            
+            
+        if (!HasFlag(VehicleFlags::StoppedOnHoldingBrake))
             {
-                if (velocity > 0.1_mph)
-                    velocity -= velocity >> 2;
+            if (track_progress == 30 || track_progress == 62)
+            {
+                if (abs(velocity) > max_brake_speed)
+                {
+                    _vehicleMotionTrackFlags |= VEHICLE_UPDATE_MOTION_TRACK_FLAG_VEHICLE_DERAILED;
+                }
                 else
-                    velocity = 0.1_mph;
-               
-            }
-            else if (track_progress <= 63)
-            {
-                velocity = 2.1_mph - abs(48 - track_progress) * 2.0_mph / 16;
-            }
-            else
-            {
-                if (velocity < 2.0_mph)
-                    acceleration = 300;
+                {
+                    SetFlag(VehicleFlags::StoppedOnHoldingBrake);
+                    full_stop_countdown = 10;
+                }
             }
         }
     }
@@ -8747,6 +8771,11 @@ int32_t Vehicle::UpdateTrackMotion(int32_t* outStation)
                 {
                     curAcceleration -= vehicle->velocity >> 6;
                 }
+                else if (vehicle->velocity < 1.75_mph)
+                {
+					// accelerate boat in water channel
+                    curAcceleration = 0x4000;
+				}
             }
         }
     }
