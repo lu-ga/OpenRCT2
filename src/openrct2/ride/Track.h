@@ -112,6 +112,8 @@ enum
     TRACK_ELEMENT_FLAGS2_HAS_GREEN_LIGHT = 1 << 4,
     TRACK_ELEMENT_FLAGS2_BRAKE_CLOSED = 1 << 5,
     TRACK_ELEMENT_FLAGS2_INDESTRUCTIBLE_TRACK_PIECE = 1 << 6,
+    // used to force stop vehicles on block begins when brake is closed even when mode is not block sectioned 
+    TRACK_ELEMENT_FLAGS2_FORCE_STOP_ON_BLOCK = 1 << 7,
 };
 
 enum
@@ -121,6 +123,7 @@ enum
     TRACK_ELEMENT_COLOUR_DOOR_A_MASK = 0b00011100,
     TRACK_ELEMENT_COLOUR_DOOR_B_MASK = 0b11100000,
     TRACK_ELEMENT_COLOUR_SEAT_ROTATION_MASK = 0b11110000,
+    TRACK_ELEMENT_COLOUR_SWITCH_TRACK_MASK = 0b11111100,
 };
 
 constexpr int8_t kMaxStationPlatformLength = 32;

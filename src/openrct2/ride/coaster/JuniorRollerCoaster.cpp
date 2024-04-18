@@ -18,6 +18,7 @@
 #include "../RideData.h"
 #include "../TrackData.h"
 #include "../TrackPaint.h"
+#include "../Ride.h"
 
 #include <algorithm>
 
@@ -5929,6 +5930,50 @@ static void JuniorRCTrackOnRidePhoto(
     PaintUtilSetGeneralSupportHeight(session, height + 48 + photoCameraOffset, 0x20);
 }
 
+static void JuniorRCReverserTable(
+    PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
+    const TrackElement& trackElement)
+{
+
+    ImageId image_id;
+
+
+    image_id = session.TrackColours.WithIndex(junior_rc_track_pieces_station[false][direction]);
+
+    int32_t slideOffset = GetSwitchTrackState(trackElement, session.MapPosition);
+
+    if (trackSequence >= 2)
+        slideOffset = slideOffset - 32;
+    
+
+    if (trackElement.GetTrackType() == TrackElemType::ReverserTableLeft)
+        slideOffset *= -1;  
+
+    switch (direction & 0b00000011)
+    {
+        case 0:
+        case 3:
+            slideOffset *= -1;
+            break;
+        default:
+            break;
+    }
+
+    if (direction & 1)
+    {
+        PaintAddImageAsParent(session, image_id, { 6 + slideOffset, 0, height }, { 20, 32, 1 });
+
+        PaintUtilPushTunnelRight(session, height, TUNNEL_0);
+    }
+    else
+    {
+        PaintAddImageAsParent(session, image_id, { 0, 6 - slideOffset, height }, { 32, 20, 1 });
+
+        PaintUtilPushTunnelLeft(session, height, TUNNEL_0);
+    }
+
+}
+
 /* 0x008AAA0C */
 template<JuniorRCSubType TSubType> TRACK_PAINT_FUNCTION GetTrackPaintFunctionJuniorRCTemplate(int32_t trackType)
 {
@@ -6154,6 +6199,10 @@ template<JuniorRCSubType TSubType> TRACK_PAINT_FUNCTION GetTrackPaintFunctionJun
 
         case TrackElemType::OnRidePhoto:
             return JuniorRCTrackOnRidePhoto;
+
+        case TrackElemType::ReverserTableLeft:
+        case TrackElemType::ReverserTableRight:
+            return JuniorRCReverserTable;
     }
     return nullptr;
 }

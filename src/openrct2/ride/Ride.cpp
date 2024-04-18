@@ -1093,6 +1093,7 @@ void Ride::Update()
         vehicle_change_timeout--;
 
     RideMusicUpdate(*this);
+    UpdateSwitchTracks(switchTracks);
 
     // Update stations
     const auto& rtd = GetRideTypeDescriptor();
@@ -2760,6 +2761,124 @@ static ResultWithMessage RideCheckBlockBrakes(const CoordsXYE& input, CoordsXYE*
     return { true };
 }
 
+uint8_t GetSwitchTrackState(const TrackElement& trackElement, const CoordsXY& trackLocation)
+{
+    TileElement* originTrack = nullptr;
+    GetTrackElementOriginAndApplyChanges(
+        { trackLocation, trackElement.GetBaseZ(), trackElement.GetDirection() }, trackElement.GetTrackType(), 0, &originTrack,
+        0);
+
+    if (originTrack != nullptr)
+    {
+        return originTrack->AsTrack()->GetSwitchTrackState();
+    }
+    else
+    {
+        return trackElement.GetSwitchTrackState();
+    }
+}
+
+void SetSwitchTrackState(TrackElement& trackElement, const CoordsXY& trackLocation, uint8_t state)
+{
+    switch (trackElement.GetTrackType())
+    {
+        case TrackElemType::ReverserTableLeft:
+        case TrackElemType::ReverserTableRight:
+            GetTrackElementOriginAndApplyChanges(
+                { trackLocation, trackElement.GetBaseZ(), trackElement.GetDirection() }, trackElement.GetTrackType(), state,
+                nullptr, TRACK_ELEMENT_SET_SWITCH_TRACK_STATE);
+            break;
+        default:
+            trackElement.SetSwitchTrackState(state);
+    }
+}
+
+
+// find all switch tracks of ride
+bool Ride::InitializeSwitchTracks(const CoordsXYE& input)
+{
+    if (input.element == nullptr)
+        return false;
+
+    const auto* trackElement = input.element->AsTrack();
+    if (trackElement == nullptr)
+        return false;
+
+    auto rideIndex = trackElement->GetRideIndex();
+    auto ride = GetRide(rideIndex);
+    if (ride == nullptr)
+        return false;
+
+    /*
+    WindowBase* w = WindowFindByClass(WindowClass::RideConstruction);
+    if (w != nullptr && _rideConstructionState != RideConstructionState::State0 && rideIndex == _currentRideIndex)
+    {
+        RideConstructionInvalidateCurrentTrack();
+    }
+    */
+
+    bool moveSlowIt = true;
+    TrackCircuitIterator it, slowIt;
+    TrackCircuitIteratorBegin(&it, input);
+    slowIt = it;
+
+    switchTracks.clear();
+
+    while (TrackCircuitIteratorNext(&it) && !it.looped)
+    {
+        auto currentTrack = it.current.element->AsTrack();
+        if (currentTrack->IsSwitchTrackBase())
+        {
+            switchTracks.push_back(currentTrack);
+        }
+
+        // Prevents infinite loops
+        moveSlowIt = !moveSlowIt;
+        if (moveSlowIt)
+        {
+            TrackCircuitIteratorNext(&slowIt);
+            if (TrackCircuitIteratorsMatch(&it, &slowIt))
+            {
+                break;
+            }
+        }
+    }
+
+    for (auto& switchTile : switchTracks)
+    {
+        switchTile->SetHasGreenLight(false);
+        switchTile->SetBrakeClosed(false);
+    }
+
+    return true;
+}
+
+const uint8_t switchTrackPosStart = 0;
+const uint8_t switchTrackPosEnd = 32;
+void UpdateSwitchTracks(std::vector<TrackElement*> switchTracks)
+{
+
+    for (auto& switchTile : switchTracks)
+    {
+        auto progress = switchTile->GetSwitchTrackState();
+        if (switchTile->HasGreenLight() == false)
+        {
+            if (progress > switchTrackPosStart)
+            {
+                progress--;
+            }
+        }
+        else if (switchTile->IsBrakeClosed())
+        {
+            if (progress < switchTrackPosEnd)
+            {
+                //progress++;
+            }
+        }
+        switchTile->SetSwitchTrackState(progress);
+    }
+}
+
 /**
  * Iterates along the track until an inversion (loop, corkscrew, barrel roll etc.) track piece is reached.
  * @param input The start track element and position.
@@ -4065,6 +4184,8 @@ ResultWithMessage Ride::Test(bool isApplying)
         return message;
     }
 
+    InitializeSwitchTracks(trackElement);
+
     return ChangeStatusCreateVehicles(isApplying, trackElement);
 }
 
@@ -4101,6 +4222,8 @@ ResultWithMessage Ride::Simulate(bool isApplying)
     {
         return message;
     }
+
+    InitializeSwitchTracks(trackElement);
 
     return ChangeStatusCreateVehicles(isApplying, trackElement);
 }
@@ -4159,6 +4282,8 @@ ResultWithMessage Ride::Open(bool isApplying)
     {
         return message;
     }
+
+    InitializeSwitchTracks(trackElement);
 
     return ChangeStatusCreateVehicles(isApplying, trackElement);
 }

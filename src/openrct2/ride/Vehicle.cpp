@@ -5506,7 +5506,8 @@ void Vehicle::CheckAndApplyBlockSectionStopSite()
     {
         case TrackElemType::BlockBrakes:
         case TrackElemType::DiagBlockBrakes:
-            if (curRide->IsBlockSectioned() && trackElement->AsTrack()->IsBrakeClosed())
+            if ((curRide->IsBlockSectioned() || trackElement->AsTrack()->IsIndestructible())
+                && trackElement->AsTrack()->IsBrakeClosed())
                 ApplyStopBlockBrake();
             else
                 ApplyNonStopBlockBrake();
@@ -5522,7 +5523,7 @@ void Vehicle::CheckAndApplyBlockSectionStopSite()
         case TrackElemType::CableLiftHill:
         case TrackElemType::DiagUp25ToFlat:
         case TrackElemType::DiagUp60ToFlat:
-            if (curRide->IsBlockSectioned())
+            if (curRide->IsBlockSectioned() || trackElement->AsTrack()->IsIndestructible())
             {
                 if (trackType == TrackElemType::CableLiftHill || trackElement->AsTrack()->HasChain())
                 {
@@ -6894,6 +6895,14 @@ bool Vehicle::UpdateTrackMotionForwardsGetNewTrack(uint16_t trackType, const Rid
         _vehicleMotionTrackFlags |= VEHICLE_UPDATE_MOTION_TRACK_FLAG_11;
     }
 
+    
+
+    
+    if (tileElement->AsTrack()->IsSwitchTrack())
+    {
+        tileElement->AsTrack()->SetHasGreenLight(false);
+    }
+
     if (tileElement->AsTrack()->IsBlockStart())
     {
         if (next_vehicle_on_train.IsNull())
@@ -7064,7 +7073,8 @@ bool Vehicle::UpdateTrackMotionForwardsGetNewTrack(uint16_t trackType, const Rid
 bool Vehicle::UpdateTrackMotionForwards(const CarEntry* carEntry, const Ride& curRide, const RideObjectEntry& rideEntry)
 {
     EntityId otherVehicleIndex = EntityId::GetNull();
-Loc6DAEB9:
+
+    Loc6DAEB9:
     auto trackType = GetTrackType();
     if (trackType == TrackElemType::HeartLineTransferUp || trackType == TrackElemType::HeartLineTransferDown)
     {
@@ -7161,6 +7171,12 @@ Loc6DAEB9:
     if (trackType == TrackElemType::ReverserTableLeft || trackType == TrackElemType::ReverserTableRight)
     {
         acceleration = 0;
+        auto trackElement = MapGetTrackElementAtOfTypeSeq(TrackLocation, GetTrackType(), 0);
+
+        if (trackElement != nullptr)
+        {
+            trackElement->AsTrack()->SetHasGreenLight(true);
+        }
         if (track_progress == 63)
         {
             ToggleFlag(VehicleFlags::CarIsReversed);
@@ -7171,12 +7187,20 @@ Loc6DAEB9:
         int32_t max_brake_speed = 6.0_mph;
         int32_t current_acceleration = 0x30000;
 
-        if (track_progress <= 31)
+        if (track_progress < 31)
         {
             target_velocity = 3.0_mph - (track_progress * track_progress * 2.5_mph) / 32 / 32;
         }
         else if (track_progress <= 63)
         {
+            uint8_t transfer_state = track_progress - 31;
+            
+            if (trackElement != nullptr)
+            {
+                trackElement->AsTrack()->SetBrakeClosed(true);
+                trackElement->AsTrack()->SetSwitchTrackState(transfer_state);
+            }
+            
             current_acceleration = 0;
             velocity = 3.0_mph - (45 - track_progress) * (45 - track_progress) * 2.5_mph / 14 / 14;
             if (velocity < min_velocity)
@@ -7185,6 +7209,8 @@ Loc6DAEB9:
         }
         else
         {
+            trackElement->AsTrack()->SetHasGreenLight(true);
+            trackElement->AsTrack()->SetBrakeClosed(false);
             target_velocity = 3.0_mph - (96 - track_progress) * (96 - track_progress) * 2.5_mph / 32 / 32;
         }
 
@@ -7206,7 +7232,7 @@ Loc6DAEB9:
             
         if (!HasFlag(VehicleFlags::StoppedOnHoldingBrake))
             {
-            if (track_progress == 30 || track_progress == 62)
+            if (track_progress == 31 || track_progress == 64)
             {
                 if (abs(velocity) > max_brake_speed)
                 {
@@ -7216,6 +7242,8 @@ Loc6DAEB9:
                 {
                     SetFlag(VehicleFlags::StoppedOnHoldingBrake);
                     full_stop_countdown = 10;
+                    velocity = 0;
+                    acceleration = 0;
                 }
             }
         }

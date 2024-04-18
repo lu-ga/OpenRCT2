@@ -979,6 +979,23 @@ void TrackElement::SetIsIndestructible(bool isIndestructible)
     }
 }
 
+bool TrackElement::IsForcedBlockStop() const
+{
+    return (Flags2 & TRACK_ELEMENT_FLAGS2_FORCE_STOP_ON_BLOCK) != 0;
+}
+
+void TrackElement::SetIsForcedBlockStop(bool forceStop)
+{
+    if (forceStop)
+    {
+        Flags2 |= TRACK_ELEMENT_FLAGS2_FORCE_STOP_ON_BLOCK;
+    }
+    else
+    {
+        Flags2 &= ~TRACK_ELEMENT_FLAGS2_FORCE_STOP_ON_BLOCK;
+    }
+}
+
 uint8_t TrackElement::GetBrakeBoosterSpeed() const
 {
     return URide.BrakeBoosterSpeed << 1;
@@ -1013,6 +1030,36 @@ void TrackElement::SetHighlight(bool on)
     Flags2 &= ~TRACK_ELEMENT_FLAGS2_HIGHLIGHT;
     if (on)
         Flags2 |= TRACK_ELEMENT_FLAGS2_HIGHLIGHT;
+}
+
+uint8_t TrackElement::GetSwitchTrackState() const
+{
+    return (URide.ColourScheme & TRACK_ELEMENT_COLOUR_SWITCH_TRACK_MASK) >> 2;
+}
+
+void TrackElement::SetSwitchTrackState(uint8_t newState)
+{
+    URide.ColourScheme &= ~TRACK_ELEMENT_COLOUR_SWITCH_TRACK_MASK;
+    URide.ColourScheme |= ((newState << 2) & TRACK_ELEMENT_COLOUR_SWITCH_TRACK_MASK);
+}
+
+bool TrackElement::IsSwitchTrack() const
+{
+    switch (GetTrackType())
+    {
+        case TrackElemType::ReverserTableLeft:
+        case TrackElemType::ReverserTableRight:
+            return true;
+    }
+    return false;
+}
+
+bool TrackElement::IsSwitchTrackBase() const
+{
+    bool isSwitchTrack = IsSwitchTrack();
+    bool index = GetSequenceIndex();
+
+    return isSwitchTrack && index == 0;
 }
 
 bool TrackTypeMustBeMadeInvisible(ride_type_t rideType, track_type_t trackType, int32_t parkFileVersion)
@@ -1138,8 +1185,6 @@ bool TrackTypeMustBeMadeInvisible(ride_type_t rideType, track_type_t trackType, 
 
     switch (trackType)
     {
-        case TrackElemType::ReverserTableLeft:
-        case TrackElemType::ReverserTableRight:
         case TrackElemType::DiagFlatCovered:
         case TrackElemType::LeftEighthToDiagCovered:
         case TrackElemType::RightEighthToDiagCovered:

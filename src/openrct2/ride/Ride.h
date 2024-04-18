@@ -286,6 +286,7 @@ struct Ride
 
 private:
     std::array<RideStation, OpenRCT2::Limits::MaxStationsPerRide> stations{};
+    std::vector<TrackElement*> switchTracks;
 
 public:
     RideStation& GetStation(StationIndex stationIndex = StationIndex::FromUnderlying(0));
@@ -313,6 +314,7 @@ private:
     money64 CalculateIncomePerHour() const;
     void ChainQueues() const;
     void ConstructMissingEntranceOrExit() const;
+    bool InitializeSwitchTracks(const CoordsXYE& input);
 
     ResultWithMessage ChangeStatusDoStationChecks(StationIndex& stationIndex);
     ResultWithMessage ChangeStatusGetStartElement(StationIndex stationIndex, CoordsXYE& trackElement);
@@ -901,7 +903,8 @@ enum
     TRACK_ELEMENT_SET_HAS_CABLE_LIFT_FALSE = (1 << 4),
     TRACK_ELEMENT_SET_SEAT_ROTATION = (1 << 5),
     TRACK_ELEMENT_SET_BRAKE_CLOSED_STATE = (1 << 6),
-    TRACK_ELEMENT_SET_BRAKE_BOOSTER_SPEED = (1 << 7)
+    TRACK_ELEMENT_SET_BRAKE_BOOSTER_SPEED = (1 << 7),
+    TRACK_ELEMENT_SET_SWITCH_TRACK_STATE = (1 << 8),
 };
 
 constexpr uint8_t kMaxRideMeasurements = 8;
@@ -1106,6 +1109,10 @@ void DetermineRideEntranceAndExitLocations();
 void RideClearLeftoverEntrances(const Ride& ride);
 
 void SetBrakeClosedMultiTile(TrackElement& trackElement, const CoordsXY& trackLocation, bool isClosed);
+
+uint8_t GetSwitchTrackState(const TrackElement& trackElement, const CoordsXY& trackLocation);
+void SetSwitchTrackState(const TrackElement& trackElement, const CoordsXY& trackLocation, uint8_t state);
+void UpdateSwitchTracks(std::vector<TrackElement*> switchTracks);
 
 std::vector<RideId> GetTracklessRides();
 

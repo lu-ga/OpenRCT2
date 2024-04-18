@@ -392,6 +392,9 @@ public:
 
     bool IsIndestructible() const;
     void SetIsIndestructible(bool isIndestructible);
+    
+    bool IsForcedBlockStop() const;
+    void SetIsForcedBlockStop(bool forceStop);
 
     uint8_t GetBrakeBoosterSpeed() const;
     void SetBrakeBoosterSpeed(uint8_t speed);
@@ -423,8 +426,14 @@ public:
     void SetDoorAState(uint8_t newState);
     void SetDoorBState(uint8_t newState);
 
+    // stores the switch track progress
+    uint8_t GetSwitchTrackState() const;
+    void SetSwitchTrackState(uint8_t newState);
+
     bool IsStation() const;
     bool IsBlockStart() const;
+    bool IsSwitchTrack() const;
+    bool IsSwitchTrackBase() const;
 };
 assert_struct_size(TrackElement, 16);
 
