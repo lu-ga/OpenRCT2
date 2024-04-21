@@ -1355,6 +1355,16 @@ namespace OpenRCT2
                         return true;
                     });
 
+                    // Switch Tracks
+                    if (version == 34)
+                    {
+                        cs.ReadWriteVector(ride.GetSwitchTracks(), [&cs](SwitchTrack& switchTrack) {
+                            cs.ReadWrite(switchTrack.position);
+                            cs.ReadWrite(switchTrack.state);
+                            cs.ReadWrite(switchTrack.timer);
+                        });
+                    }
+
                     cs.ReadWrite(ride.overall_view.x);
                     cs.ReadWrite(ride.overall_view.y);
 

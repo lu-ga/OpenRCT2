@@ -5551,12 +5551,11 @@ void Vehicle::UpdateVelocity()
     if (HasFlag(VehicleFlags::StoppedOnHoldingBrake))
     {
         vertical_drop_countdown--;
-        full_stop_countdown--;
-        if (vertical_drop_countdown == -70 || full_stop_countdown < 0)
+        if (vertical_drop_countdown == -70)
         {
             ClearFlag(VehicleFlags::StoppedOnHoldingBrake);
         }
-        if (vertical_drop_countdown >= 0 || full_stop_countdown >= 0)
+        if (vertical_drop_countdown >= 0)
         {
             nextVelocity = 0;
             acceleration = 0;
@@ -7066,6 +7065,122 @@ bool Vehicle::UpdateTrackMotionForwardsGetNewTrack(uint16_t trackType, const Rid
     return true;
 }
 
+bool Vehicle::UpdateTrackMotionSwitchTrack(const CarEntry* carEntry, const Ride& curRide, const RideObjectEntry& rideEntry)
+{
+    auto trackElement = MapGetTrackElementAtOfTypeSeq(TrackLocation, GetTrackType(), 0);
+    if (trackElement == nullptr || !trackElement->AsTrack()->IsSwitchTrack())
+        return false;
+
+	if (track_progress == 0)
+    {
+		// use this flag to store reversed state at entry
+        trackElement->AsTrack()->SetHasCableLift(HasFlag(VehicleFlags::CarIsReversed));
+    }
+    bool carWasReversed = trackElement->AsTrack()->HasCableLift();
+
+	
+    int32_t min_velocity = 0.5_mph;
+    int32_t target_velocity = 3.0_mph;
+    int32_t max_brake_speed = 6.0_mph;
+    int32_t current_acceleration = 0x30000;
+
+	
+    bool trackControlsProgress = false;
+
+	acceleration = 0;
+
+    if (track_progress < 48)
+    {
+        target_velocity = 3.0_mph - (track_progress * track_progress * 2.5_mph) / 32 / 32;
+    }
+    else
+    {
+        target_velocity = 3.0_mph - (96 - track_progress) * (96 - track_progress) * 2.5_mph / 32 / 32;
+    }
+
+    if (target_velocity < min_velocity)
+        target_velocity = min_velocity;
+
+    int32_t velocity_delta = velocity - target_velocity;
+
+    if (velocity_delta > 0)
+    {
+        if (velocity_delta < max_brake_speed)
+            acceleration = -current_acceleration;
+    }
+	else
+    {
+        acceleration = current_acceleration;
+	}
+
+    trackControlsProgress = trackElement->AsTrack()->IsForcedBlockStop();
+    uint8_t switchPos = trackElement->AsTrack()->GetSwitchTrackState();
+    bool derailed = false;
+
+    if (trackControlsProgress)
+    {
+        track_progress = 32 + switchPos;
+        velocity = 0;
+        acceleration = 0;
+
+		if (switchPos == 32)
+        {
+            if (carWasReversed)
+            {
+                ClearFlag(VehicleFlags::CarIsReversed);
+            }
+            else
+            {
+                SetFlag(VehicleFlags::CarIsReversed);
+            }
+        }
+
+        const auto moveInfo = GetMoveInfo();
+        auto nextVehiclePosition = TrackLocation
+            + CoordsXYZ{ moveInfo->x, moveInfo->y, moveInfo->z + GetRideTypeDescriptor(curRide.type).Heights.VehicleZOffset };
+
+		
+        _vehicleCurPosition = nextVehiclePosition;
+        Orientation = moveInfo->direction;
+        bank_rotation = moveInfo->bank_rotation;
+        Pitch = moveInfo->Pitch;
+        return true;
+    }
+    
+    // check collisions
+    if (track_progress < 32 && switchPos > 0)
+        derailed = true;
+
+    if (track_progress >= 64 && switchPos < 32)
+        derailed = true;
+
+    if (track_progress >= 32 && track_progress < 63 && !trackControlsProgress)
+        derailed = true;
+        
+
+    if (track_progress == 31)
+    {
+        if (abs(velocity) > max_brake_speed)
+        {
+            derailed = true;
+        }
+        else
+        {
+            trackElement->AsTrack()->SetIsForcedBlockStop(true);
+            velocity = 0;
+            acceleration = 0;
+            trackControlsProgress = true;
+        }
+    }
+
+    if (derailed)
+    {
+        _vehicleMotionTrackFlags |= VEHICLE_UPDATE_MOTION_TRACK_FLAG_VEHICLE_DERAILED;
+    }
+
+    return false;
+}
+
 /**
  *
  *  rct2: 0x006DAEB9
@@ -7164,88 +7279,6 @@ bool Vehicle::UpdateTrackMotionForwards(const CarEntry* carEntry, const Ride& cu
         else
         {
             track_progress += 17;
-        }
-    }
-
-    
-    if (trackType == TrackElemType::ReverserTableLeft || trackType == TrackElemType::ReverserTableRight)
-    {
-        acceleration = 0;
-        auto trackElement = MapGetTrackElementAtOfTypeSeq(TrackLocation, GetTrackType(), 0);
-
-        if (trackElement != nullptr)
-        {
-            trackElement->AsTrack()->SetHasGreenLight(true);
-        }
-        if (track_progress == 63)
-        {
-            ToggleFlag(VehicleFlags::CarIsReversed);
-        }
-
-        int32_t min_velocity = 0.5_mph;
-        int32_t target_velocity = 3.0_mph;
-        int32_t max_brake_speed = 6.0_mph;
-        int32_t current_acceleration = 0x30000;
-
-        if (track_progress < 31)
-        {
-            target_velocity = 3.0_mph - (track_progress * track_progress * 2.5_mph) / 32 / 32;
-        }
-        else if (track_progress <= 63)
-        {
-            uint8_t transfer_state = track_progress - 31;
-            
-            if (trackElement != nullptr)
-            {
-                trackElement->AsTrack()->SetBrakeClosed(true);
-                trackElement->AsTrack()->SetSwitchTrackState(transfer_state);
-            }
-            
-            current_acceleration = 0;
-            velocity = 3.0_mph - (45 - track_progress) * (45 - track_progress) * 2.5_mph / 14 / 14;
-            if (velocity < min_velocity)
-                velocity = min_velocity;
-
-        }
-        else
-        {
-            trackElement->AsTrack()->SetHasGreenLight(true);
-            trackElement->AsTrack()->SetBrakeClosed(false);
-            target_velocity = 3.0_mph - (96 - track_progress) * (96 - track_progress) * 2.5_mph / 32 / 32;
-        }
-
-            
-        if (target_velocity < min_velocity)
-            target_velocity = min_velocity;
-
-        int32_t velocity_delta = velocity - target_velocity;
-            
-        if (velocity_delta > 0)
-        {
-            if (velocity_delta < max_brake_speed)
-                acceleration = -current_acceleration;
-        }
-        else
-            acceleration = current_acceleration;
-
-            
-            
-        if (!HasFlag(VehicleFlags::StoppedOnHoldingBrake))
-            {
-            if (track_progress == 31 || track_progress == 64)
-            {
-                if (abs(velocity) > max_brake_speed)
-                {
-                    _vehicleMotionTrackFlags |= VEHICLE_UPDATE_MOTION_TRACK_FLAG_VEHICLE_DERAILED;
-                }
-                else
-                {
-                    SetFlag(VehicleFlags::StoppedOnHoldingBrake);
-                    full_stop_countdown = 10;
-                    velocity = 0;
-                    acceleration = 0;
-                }
-            }
         }
     }
 
@@ -8672,6 +8705,10 @@ int32_t Vehicle::UpdateTrackMotion(int32_t* outStation)
 
         while (true)
         {
+            if (car->UpdateTrackMotionSwitchTrack(carEntry, *curRide, *rideEntry))
+            {
+                break;
+            }
             if (car->remaining_distance < 0)
             {
                 // Backward loop
@@ -9124,5 +9161,4 @@ void Vehicle::Serialise(DataSerialiser& stream)
     stream << target_seat_rotation;
     stream << BoatLocation;
     stream << BlockBrakeSpeed;
-    stream << full_stop_countdown;
 }

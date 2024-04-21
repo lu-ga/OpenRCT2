@@ -105,6 +105,22 @@ struct TrackDesignState;
 enum class RideMode : uint8_t;
 enum class RideStatus : uint8_t;
 
+enum SwitchTrackState: uint8_t {
+	SwitchAtStart,
+    SwitchMoveToEnd,
+    SwitchAtEnd,
+    SwitchMoveToStart,
+};
+
+struct SwitchTrack
+{
+    CoordsXYZ position{};
+    SwitchTrackState state{};
+	// movement tick timer. can be either ticks elapsed since movement started from either end or since track arrived at either end.
+	// movement direction is derived from TrackElement flags
+    uint32_t timer{};
+};
+
 /**
  * Ride structure.
  *
@@ -286,7 +302,7 @@ struct Ride
 
 private:
     std::array<RideStation, OpenRCT2::Limits::MaxStationsPerRide> stations{};
-    std::vector<TrackElement*> switchTracks;
+    std::vector<SwitchTrack> switchTracks;
 
 public:
     RideStation& GetStation(StationIndex stationIndex = StationIndex::FromUnderlying(0));
@@ -294,6 +310,8 @@ public:
     std::array<RideStation, OpenRCT2::Limits::MaxStationsPerRide>& GetStations();
     const std::array<RideStation, OpenRCT2::Limits::MaxStationsPerRide>& GetStations() const;
     StationIndex GetStationIndex(const RideStation* station) const;
+    std::vector<SwitchTrack>& GetSwitchTracks();
+
 
     // Returns the logical station number from the given station. Index 0 = station 1, index 1 = station 2. It accounts for gaps
     // in the station array. e.g. if only slot 0 and 2 are in use, index 2 returns 2 instead of 3.
@@ -314,6 +332,7 @@ private:
     money64 CalculateIncomePerHour() const;
     void ChainQueues() const;
     void ConstructMissingEntranceOrExit() const;
+    void UpdateSwitchTracks();
     bool InitializeSwitchTracks(const CoordsXYE& input);
 
     ResultWithMessage ChangeStatusDoStationChecks(StationIndex& stationIndex);
@@ -1112,7 +1131,6 @@ void SetBrakeClosedMultiTile(TrackElement& trackElement, const CoordsXY& trackLo
 
 uint8_t GetSwitchTrackState(const TrackElement& trackElement, const CoordsXY& trackLocation);
 void SetSwitchTrackState(const TrackElement& trackElement, const CoordsXY& trackLocation, uint8_t state);
-void UpdateSwitchTracks(std::vector<TrackElement*> switchTracks);
 
 std::vector<RideId> GetTracklessRides();
 

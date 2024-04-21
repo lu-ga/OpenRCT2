@@ -1093,7 +1093,7 @@ void Ride::Update()
         vehicle_change_timeout--;
 
     RideMusicUpdate(*this);
-    UpdateSwitchTracks(switchTracks);
+    UpdateSwitchTracks();
 
     // Update stations
     const auto& rtd = GetRideTypeDescriptor();
@@ -2829,7 +2829,11 @@ bool Ride::InitializeSwitchTracks(const CoordsXYE& input)
         auto currentTrack = it.current.element->AsTrack();
         if (currentTrack->IsSwitchTrackBase())
         {
-            switchTracks.push_back(currentTrack);
+            CoordsXYZ position = { it.current.x, it.current.y, it.currentZ };
+            currentTrack->SetHasGreenLight(false);
+            currentTrack->SetIsForcedBlockStop(false);
+            currentTrack->SetSwitchTrackState(0);
+            switchTracks.push_back({ position, SwitchAtStart, 0 });
         }
 
         // Prevents infinite loops
@@ -2844,39 +2848,126 @@ bool Ride::InitializeSwitchTracks(const CoordsXYE& input)
         }
     }
 
-    for (auto& switchTile : switchTracks)
-    {
-        switchTile->SetHasGreenLight(false);
-        switchTile->SetBrakeClosed(false);
-    }
-
     return true;
 }
 
+
+// duration in ticks how long the switch transfer shall take
+const uint8_t switchTrackTransferDuration = 48;
+// duration in ticks how long the switch waits after train arrives and after switch is in end position
+const uint8_t switchTrackWaitBeforeMove = 10;
+// duration in ticks how long the switch waits after train clears it before it moves back
+const uint8_t switchTrackWaitAfterFree = 30;
 const uint8_t switchTrackPosStart = 0;
 const uint8_t switchTrackPosEnd = 32;
-void UpdateSwitchTracks(std::vector<TrackElement*> switchTracks)
-{
 
-    for (auto& switchTile : switchTracks)
+static uint8_t getProgressEased(uint8_t timer)
+{
+    if (timer == 0)
+        return 0;
+    if (timer >= switchTrackTransferDuration)
+        return switchTrackPosEnd;
+
+    float p = timer * 1.0f / switchTrackTransferDuration;
+
+    // f(p) = -2p^3 + 3p^2
+    // f(p) = 6p^5 - 15p^4 + 10p^3
+    p = 6 * p * p * p * p * p - 15 * p * p * p * p + 10 * p * p * p;
+
+    return p * switchTrackPosEnd;
+}
+
+void Ride::UpdateSwitchTracks()
+{
+    for (SwitchTrack& swTrack : switchTracks)
     {
-        auto progress = switchTile->GetSwitchTrackState();
-        if (switchTile->HasGreenLight() == false)
+        TrackElement* track = MapGetTrackElementAt(swTrack.position);
+        if (track == nullptr || !track->IsSwitchTrackBase())
         {
-            if (progress > switchTrackPosStart)
-            {
-                progress--;
-            }
+            LOG_WARNING(
+                "Can't find switch track element at (%d, %d, %d)", swTrack.position.x, swTrack.position.y, swTrack.position.z);
+            break;
         }
-        else if (switchTile->IsBrakeClosed())
+
+        uint8_t switchPosition = switchTrackPosStart;
+        switch (swTrack.state)
         {
-            if (progress < switchTrackPosEnd)
-            {
-                //progress++;
-            }
+            case SwitchAtStart:
+                if (track->IsForcedBlockStop())
+                {
+                    if (swTrack.timer >= switchTrackWaitBeforeMove)
+                    {
+                        swTrack.state = SwitchMoveToEnd;
+                        swTrack.timer = 0;
+                    }
+                }
+                else
+                {
+                    swTrack.timer = 0;
+                }
+                break;
+
+            case SwitchMoveToEnd:
+                track->SetIsForcedBlockStop(true);
+                switchPosition = getProgressEased(swTrack.timer);
+
+                if (swTrack.timer >= switchTrackTransferDuration)
+                {
+                    switchPosition = switchTrackPosEnd;
+                    swTrack.state = SwitchAtEnd;
+                    swTrack.timer = 0;
+                }                
+                break;
+
+            case SwitchAtEnd:
+                switchPosition = switchTrackPosEnd;
+                // wait until timer runs out
+                if (track->IsForcedBlockStop() && swTrack.timer >= switchTrackWaitBeforeMove)
+                {
+                    track->SetIsForcedBlockStop(false);
+                    track->SetHasGreenLight(true);
+                    swTrack.timer = 0;
+                }
+                else
+                {
+                    if (track->HasGreenLight())
+                    {
+                        // keep timer at 0, train is still on track
+                        swTrack.timer = 0;
+                    }
+                    else if (swTrack.timer >= switchTrackWaitAfterFree)
+                    {
+                        track->SetIsForcedBlockStop(false);
+                        track->SetHasGreenLight(false);
+                        swTrack.timer = 0;
+                        swTrack.state = SwitchMoveToStart;
+                    }
+                }
+                break;
+
+            case SwitchMoveToStart:
+                switchPosition = switchTrackPosEnd - getProgressEased(swTrack.timer);
+                track->SetSwitchTrackState(switchPosition);
+
+                if (switchPosition == switchTrackPosStart)
+                {
+                    swTrack.state = SwitchAtStart;
+                    swTrack.timer = 0;
+                }
+                break;
+            default:
+                break;
+
         }
-        switchTile->SetSwitchTrackState(progress);
+
+        track->SetSwitchTrackState(switchPosition);
+        swTrack.timer = swTrack.timer + 1;
     }
+}
+
+std::vector<SwitchTrack>& Ride::GetSwitchTracks()
+{
+    return this->switchTracks;
 }
 
 /**
